@@ -1,85 +1,99 @@
 # Virtual Gamepad
-Virtual XBox360 and DualShock4 gamepads in python.
+
+Virtual XBox360 and DualShock4 gamepads in Python.
 
 ---
 
-Virtual Gamepad (```vgamepad```) is a small python library that emulates XBox360 and DualShock4 gamepads on your system.
-It enables controlling e.g. a video-game that requires analog input, directly from your python script.
+Virtual Gamepad (`vgamepad`) is a small Python library that emulates XBox360 and DualShock4 gamepads on your system. It enables controlling e.g. a video game that requires analog input directly from your Python script.
 
-On Windows, ```vgamepad``` uses the [Virtual Gamepad Emulation](https://github.com/nefarius/ViGEmBus) C++ framework, for which it essentially provides python bindings and a user-friendly interface.
-The ViGEmBus driver (`v1.17.333`) is bundled with the library and installs automatically.
-
-On Linux, `vgamepad` creates a `uinput` device and requires the corresponding permission.
+- **Windows:** `vgamepad` uses the [Virtual Gamepad Emulation (ViGEmBus)](https://github.com/nefarius/ViGEmBus) C++ framework, providing Python bindings and a user-friendly interface. The ViGEmBus driver (`v1.17.333`) is bundled with the library and installs automatically.
+- **Linux:** `vgamepad` creates a `uinput` device and requires the corresponding system permissions.
 
 ---
 
-## Quick links
+## Quick Links
+
 - [Installation](#installation)
-- [Getting started](#getting-started)
-  - [XBox360 gamepad](#xbox360-gamepad)
-  - [DualShock4 gamepad](#dualshock4-gamepad)
+  - [Windows](#windows)
+  - [Linux](#linux)
+- [Getting Started](#getting-started)
+  - [XBox360 Gamepad](#xbox360-gamepad)
+  - [DualShock4 Gamepad](#dualshock4-gamepad)
   - [Rumble and LEDs](#rumble-and-leds)
-- [Advanced](#advanced-users)
-- [Contribute](#authors)
+- [Advanced Users](#advanced-users)
+- [Testing](#testing)
+- [Contribute](#contribute)
+- [Authors](#authors)
 
 ---
 
 ## Installation
 
-### Windows:
-Open your favorite terminal (e.g. anaconda prompt) and run:
+### Windows
+
+Open your preferred terminal (e.g. Anaconda Prompt) and run:
+
 ```bash
 pip install vgamepad
 ```
 
-This automatically runs the installer of the ViGEmBus driver.
-Accept the licence agreement, click ```Install```, allow the installer to modify your PC, wait for completion and click ```Finish```.
+This automatically launches the ViGEmBus driver installer. Accept the license agreement, click **Install**, allow the installer to modify your PC, wait for completion, and click **Finish**.
 
-```vgamepad``` is now installed in your active python environment.
+`vgamepad` is now installed in your active Python environment.
 
-### Linux:
+### Linux
 
-#### Prerequisite
+#### Prerequisites
 
-On Linux, `vgamepad` needs access to `uinput`.
+On Linux, `vgamepad` requires access to `/dev/uinput`.
 
-To give yourself permission to access `uinput` for the current session, open a terminal and execute:
+To grant permission for the current session only:
+
 ```bash
 sudo chmod +0666 /dev/uinput
 ```
 
-Create a `udev` rule to set the permission permanently (otherwise the permission will be removed next time you log in):
+To configure permissions permanently across reboots, create a `udev` rule:
+
 ```bash
-sudo nano /etc/udev/rules.d/50-uinput.rules 
+sudo nano /etc/udev/rules.d/50-uinput.rules
 ```
-In `nano`, paste the following line:
-```bash
+
+Add the following line:
+
+```udev
 KERNEL=="uinput", TAG+="uaccess"
 ```
-Save by pressing `CTRL+o`, `ENTER`, and exit `nano` by pressing `CTRL+x`
 
-#### vgamepad installation
+Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
+
+#### Installing vgamepad
 
 Run:
+
 ```bash
 pip install vgamepad
 ```
 
-```vgamepad``` is now installed in your active python environment.
+`vgamepad` is now installed in your active Python environment.
 
 ---
 
-## Getting started
+## Getting Started
 
-```vgamepad``` exposes two main python classes : ```VX360Gamepad```, which emulates an XBox360 gamepad, and ```VDS4Gamepad```, which emulates a DualShock4 gamepad. These emulated gamepad are detected by your computer as if a true gamepad was connected, and can be controlled from your python program.
+`vgamepad` exposes two primary classes:
+- `VX360Gamepad` — emulates an XBox360 controller.
+- `VDS4Gamepad` — emulates a DualShock4 controller.
 
-The state of a virtual gamepad (e.g. pressed buttons, joystick values...) is called a report.
-To modify the report, a number of user-friendly API functions are provided by ```vgamepad```.
-When the report is modified as desired, it must be sent to the computer thanks to the ```update``` API function.
+Both virtual devices are recognized by your operating system identically to physical gamepads and can be fully controlled programmatically.
 
-### XBox360 gamepad
+The state of a virtual gamepad (buttons, triggers, joysticks) is represented as a **report**. Modify the report using API methods, then push updates to the operating system using `gamepad.update()`.
 
-The following python script creates a virtual XBox360 gamepad:
+---
+
+### XBox360 Gamepad
+
+#### Initialization
 
 ```python
 import vgamepad as vg
@@ -87,85 +101,86 @@ import vgamepad as vg
 gamepad = vg.VX360Gamepad()
 ```
 
-As soon as the ```VX360Gamepad``` object is created, the virtual gamepad is connected to your system and will remain connected until the object is destroyed.
+The virtual gamepad connects immediately upon instantiation and remains connected until the object is destroyed.
 
-Buttons can be pressed and released through ```press_button``` and ```release_button```:
+#### Buttons
+
+Buttons can be toggled using `press_button` and `release_button`:
 
 ```python
-gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_A)  # press the A button
-gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_LEFT)  # press the left hat button
+gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_A)          # Press A
+gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_LEFT)  # Press D-Pad Left
 
-gamepad.update()  # send the updated state to the computer
+gamepad.update()  # Send state to system
 
-# (...) A and left hat are pressed...
+# (...) A and D-Pad Left are currently pressed
 
-gamepad.release_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_A)  # release the A button
+gamepad.release_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_A)        # Release A
 
-gamepad.update()  # send the updated state to the computer
-
-# (...) left hat is still pressed...
+gamepad.update()  # Send state to system
 ```
 
-All available buttons are defined in ```XUSB_BUTTON```:
+Available button definitions in `vg.XUSB_BUTTON`:
+
 ```python
 class XUSB_BUTTON(IntFlag):
-    """
-    Possible XUSB report buttons.
-    """
-    XUSB_GAMEPAD_DPAD_UP = 0x0001
-    XUSB_GAMEPAD_DPAD_DOWN = 0x0002
-    XUSB_GAMEPAD_DPAD_LEFT = 0x0004
-    XUSB_GAMEPAD_DPAD_RIGHT = 0x0008
-    XUSB_GAMEPAD_START = 0x0010
-    XUSB_GAMEPAD_BACK = 0x0020
-    XUSB_GAMEPAD_LEFT_THUMB = 0x0040
-    XUSB_GAMEPAD_RIGHT_THUMB = 0x0080
-    XUSB_GAMEPAD_LEFT_SHOULDER = 0x0100
+    XUSB_GAMEPAD_DPAD_UP        = 0x0001
+    XUSB_GAMEPAD_DPAD_DOWN      = 0x0002
+    XUSB_GAMEPAD_DPAD_LEFT      = 0x0004
+    XUSB_GAMEPAD_DPAD_RIGHT     = 0x0008
+    XUSB_GAMEPAD_START          = 0x0010
+    XUSB_GAMEPAD_BACK           = 0x0020
+    XUSB_GAMEPAD_LEFT_THUMB     = 0x0040
+    XUSB_GAMEPAD_RIGHT_THUMB    = 0x0080
+    XUSB_GAMEPAD_LEFT_SHOULDER  = 0x0100
     XUSB_GAMEPAD_RIGHT_SHOULDER = 0x0200
-    XUSB_GAMEPAD_GUIDE = 0x0400
-    XUSB_GAMEPAD_A = 0x1000
-    XUSB_GAMEPAD_B = 0x2000
-    XUSB_GAMEPAD_X = 0x4000
-    XUSB_GAMEPAD_Y = 0x8000
+    XUSB_GAMEPAD_GUIDE          = 0x0400
+    XUSB_GAMEPAD_A              = 0x1000
+    XUSB_GAMEPAD_B              = 0x2000
+    XUSB_GAMEPAD_X              = 0x4000
+    XUSB_GAMEPAD_Y              = 0x8000
 ```
 
-To control the triggers (1 axis each) and the joysticks (2 axis each), two options are provided by the API.
+#### Triggers and Joysticks
 
-It is possible to input raw integer values directly:
+Values can be supplied as raw integers:
+
 ```python
-gamepad.left_trigger(value=100)  # value between 0 and 255
-gamepad.right_trigger(value=255)  # value between 0 and 255
-gamepad.left_joystick(x_value=-10000, y_value=0)  # values between -32768 and 32767
-gamepad.right_joystick(x_value=-32768, y_value=15000)  # values between -32768 and 32767
+gamepad.left_trigger(value=100)                        # 0 to 255
+gamepad.right_trigger(value=255)                       # 0 to 255
+gamepad.left_joystick(x_value=-10000, y_value=0)       # -32768 to 32767
+gamepad.right_joystick(x_value=-32768, y_value=15000)  # -32768 to 32767
 
 gamepad.update()
 ```
 
-Or to input float values:
+Or normalized floats:
+
 ```python
-gamepad.left_trigger_float(value_float=0.5)  # value between 0.0 and 1.0
-gamepad.right_trigger_float(value_float=1.0)  # value between 0.0 and 1.0
-gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.0)  # values between -1.0 and 1.0
-gamepad.right_joystick_float(x_value_float=-1.0, y_value_float=0.8)  # values between -1.0 and 1.0
+gamepad.left_trigger_float(value_float=0.5)                        # 0.0 to 1.0
+gamepad.right_trigger_float(value_float=1.0)                       # 0.0 to 1.0
+gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.0) # -1.0 to 1.0
+gamepad.right_joystick_float(x_value_float=-1.0, y_value_float=0.8)# -1.0 to 1.0
 
 gamepad.update()
 ```
 
-Reset to default state:
+#### Resetting State
+
 ```python
 gamepad.reset()
-
 gamepad.update()
 ```
 
-Full example:
+#### Full XBox360 Example
+
 ```python
-import vgamepad as vg
 import time
+import vgamepad as vg
 
 gamepad = vg.VX360Gamepad()
 
-# press a button to wake the device up
+# Wake up device
 gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_A)
 gamepad.update()
 time.sleep(0.5)
@@ -173,7 +188,7 @@ gamepad.release_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_A)
 gamepad.update()
 time.sleep(0.5)
 
-# press buttons and things
+# Apply inputs
 gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_A)
 gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER)
 gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_DOWN)
@@ -182,39 +197,38 @@ gamepad.left_trigger_float(value_float=0.5)
 gamepad.right_trigger_float(value_float=0.5)
 gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.2)
 gamepad.right_joystick_float(x_value_float=-1.0, y_value_float=1.0)
-
 gamepad.update()
 
 time.sleep(1.0)
 
-# release buttons and things
+# Release inputs
 gamepad.release_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_A)
 gamepad.release_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_LEFT)
 gamepad.right_trigger_float(value_float=0.0)
 gamepad.right_joystick_float(x_value_float=0.0, y_value_float=0.0)
-
 gamepad.update()
 
 time.sleep(1.0)
 
-# reset gamepad to default state
+# Reset back to default
 gamepad.reset()
-
 gamepad.update()
-
-time.sleep(1.0)
 ```
 
-### DualShock4 gamepad
+---
 
-Using a virtual DS4 gamepad is similar to X360, except `vgamepad` also exposes features that are exclusive to the DS4 gamepad:
+### DualShock4 Gamepad
+
+The `VDS4Gamepad` class mirrors the XBox360 interface while offering DualShock4-exclusive capabilities:
+
 ```python
 import vgamepad as vg
 
 gamepad = vg.VDS4Gamepad()
 ```
 
-Press and release buttons:
+#### Standard Digital Buttons
+
 ```python
 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_TRIANGLE)
 gamepad.update()
@@ -225,27 +239,26 @@ gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_TRIANGLE)
 gamepad.update()
 ```
 
-Available buttons are defined in ```DS4_BUTTONS```:
+Available buttons in `vg.DS4_BUTTONS`:
+
 ```python
 class DS4_BUTTONS(IntFlag):
-    """
-    DualShock 4 digital buttons
-    """
-    DS4_BUTTON_THUMB_RIGHT = 1 << 15
-    DS4_BUTTON_THUMB_LEFT = 1 << 14
-    DS4_BUTTON_OPTIONS = 1 << 13
-    DS4_BUTTON_SHARE = 1 << 12
-    DS4_BUTTON_TRIGGER_RIGHT = 1 << 11
-    DS4_BUTTON_TRIGGER_LEFT = 1 << 10
+    DS4_BUTTON_THUMB_RIGHT    = 1 << 15
+    DS4_BUTTON_THUMB_LEFT     = 1 << 14
+    DS4_BUTTON_OPTIONS        = 1 << 13
+    DS4_BUTTON_SHARE          = 1 << 12
+    DS4_BUTTON_TRIGGER_RIGHT  = 1 << 11
+    DS4_BUTTON_TRIGGER_LEFT   = 1 << 10
     DS4_BUTTON_SHOULDER_RIGHT = 1 << 9
-    DS4_BUTTON_SHOULDER_LEFT = 1 << 8
-    DS4_BUTTON_TRIANGLE = 1 << 7
-    DS4_BUTTON_CIRCLE = 1 << 6
-    DS4_BUTTON_CROSS = 1 << 5
-    DS4_BUTTON_SQUARE = 1 << 4
+    DS4_BUTTON_SHOULDER_LEFT  = 1 << 8
+    DS4_BUTTON_TRIANGLE       = 1 << 7
+    DS4_BUTTON_CIRCLE         = 1 << 6
+    DS4_BUTTON_CROSS          = 1 << 5
+    DS4_BUTTON_SQUARE         = 1 << 4
 ```
 
-Press and release special buttons:
+#### Special Buttons (PS and Touchpad Click)
+
 ```python
 gamepad.press_special_button(special_button=vg.DS4_SPECIAL_BUTTONS.DS4_SPECIAL_BUTTON_PS)
 gamepad.update()
@@ -256,92 +269,89 @@ gamepad.release_special_button(special_button=vg.DS4_SPECIAL_BUTTONS.DS4_SPECIAL
 gamepad.update()
 ```
 
-Special buttons are defined in ```DS4_SPECIAL_BUTTONS```:
+Available special buttons in `vg.DS4_SPECIAL_BUTTONS`:
+
 ```python
 class DS4_SPECIAL_BUTTONS(IntFlag):
-    """
-    DualShock 4 special buttons
-    """
-    DS4_SPECIAL_BUTTON_PS = 1 << 0
+    DS4_SPECIAL_BUTTON_PS       = 1 << 0
     DS4_SPECIAL_BUTTON_TOUCHPAD = 1 << 1
 ```
 
-Triggers and joysticks (integer values):
+#### Triggers and Joysticks
+
+Raw integer inputs:
+
 ```python
-gamepad.left_trigger(value=100)  # value between 0 and 255
-gamepad.right_trigger(value=255)  # value between 0 and 255
-gamepad.left_joystick(x_value=0, y_value=128)  # value between 0 and 255
-gamepad.right_joystick(x_value=0, y_value=255)  # value between 0 and 255
+gamepad.left_trigger(value=100)                # 0 to 255
+gamepad.right_trigger(value=255)               # 0 to 255
+gamepad.left_joystick(x_value=0, y_value=128)  # 0 to 255
+gamepad.right_joystick(x_value=0, y_value=255) # 0 to 255
 
 gamepad.update()
 ```
 
-Triggers and joysticks (float values):
+Normalized float inputs:
+
 ```python
-gamepad.left_trigger_float(value_float=0.5)  # value between 0.0 and 1.0
-gamepad.right_trigger_float(value_float=1.0)  # value between 0.0 and 1.0
-gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.0)  # values between -1.0 and 1.0
-gamepad.right_joystick_float(x_value_float=-1.0, y_value_float=0.8)  # values between -1.0 and 1.0
+gamepad.left_trigger_float(value_float=0.5)                         # 0.0 to 1.0
+gamepad.right_trigger_float(value_float=1.0)                        # 0.0 to 1.0
+gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.0)  # -1.0 to 1.0
+gamepad.right_joystick_float(x_value_float=-1.0, y_value_float=0.8) # -1.0 to 1.0
 
 gamepad.update()
 ```
 
-* **Note:** Since version `0.1.0`, the DS4 Y axis on joysticks is inverted compared to the X360 API (native VIGEm behavior).
+> **Note:** Since version `0.1.0`, the DS4 Y-axis on joysticks is inverted relative to the X360 API (matching native ViGEmBus behavior).
 
-Directional pad (hat):
+#### Directional Pad (Hat)
+
 ```python
 gamepad.directional_pad(direction=vg.DS4_DPAD_DIRECTIONS.DS4_BUTTON_DPAD_NORTHWEST)
 gamepad.update()
 ```
 
-Directions for the directional pad are defined in ```DS4_DPAD_DIRECTIONS```:
+Available values in `vg.DS4_DPAD_DIRECTIONS`:
+
 ```python
 class DS4_DPAD_DIRECTIONS(IntEnum):
-    """
-    DualShock 4 directional pad (HAT) values
-    """
-    DS4_BUTTON_DPAD_NONE = 0x8
+    DS4_BUTTON_DPAD_NONE      = 0x8
     DS4_BUTTON_DPAD_NORTHWEST = 0x7
-    DS4_BUTTON_DPAD_WEST = 0x6
+    DS4_BUTTON_DPAD_WEST      = 0x6
     DS4_BUTTON_DPAD_SOUTHWEST = 0x5
-    DS4_BUTTON_DPAD_SOUTH = 0x4
+    DS4_BUTTON_DPAD_SOUTH     = 0x4
     DS4_BUTTON_DPAD_SOUTHEAST = 0x3
-    DS4_BUTTON_DPAD_EAST = 0x2
+    DS4_BUTTON_DPAD_EAST      = 0x2
     DS4_BUTTON_DPAD_NORTHEAST = 0x1
-    DS4_BUTTON_DPAD_NORTH = 0x0
+    DS4_BUTTON_DPAD_NORTH     = 0x0
 ```
 
-Accelerometer and gyroscope:
+#### Motion Sensors (Accelerometer & Gyroscope)
+
 ```python
-gamepad.accelerometer(x_value=3000, y_value=1000, z_value=0)  # values between -32768 and 32767
-gamepad.gyroscope(x_value=0, y_value=10000, z_value=-5000)  # values between -32768 and 32767
+gamepad.accelerometer(x_value=3000, y_value=1000, z_value=0)     # -32768 to 32767
+gamepad.gyroscope(x_value=0, y_value=10000, z_value=-5000)       # -32768 to 32767
 
 gamepad.update()
 ```
 
-Touchpad:
+#### Touchpad Surface
+
 ```python
-gamepad.touchpad(finger1=(1800, 800), finger2=None) # x between 0 and 1919, y between 0 and 941
-# (0,0) is top left and (1919, 941) is bottom right
+# (0, 0) is top-left, (1919, 941) is bottom-right
+gamepad.touchpad(finger1=(1800, 800), finger2=None)
 
 gamepad.update()
 ```
 
-Reset to default state:
-```python
-gamepad.reset()
+#### Full DualShock4 Example
 
-gamepad.update()
-```
-
-Full example:
 ```python
-import vgamepad as vg
 import time
+import vgamepad as vg
 
 gamepad = vg.VDS4Gamepad()
 
-# press a button to wake the device up
+# Wake up device
 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_TRIANGLE)
 gamepad.update()
 time.sleep(0.5)
@@ -349,7 +359,7 @@ gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_TRIANGLE)
 gamepad.update()
 time.sleep(0.5)
 
-# press buttons and things
+# Apply inputs
 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_TRIANGLE)
 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_CIRCLE)
 gamepad.press_button(button=vg.DS4_BUTTONS.DS4_BUTTON_THUMB_RIGHT)
@@ -362,107 +372,113 @@ gamepad.right_joystick_float(x_value_float=-1.0, y_value_float=1.0)
 gamepad.accelerometer(x_value=3000, y_value=1000, z_value=0)
 gamepad.gyroscope(x_value=0, y_value=10000, z_value=-5000)
 gamepad.touchpad(finger1=(1800, 800), finger2=None)
-
 gamepad.update()
 
 time.sleep(1.0)
 
-# release buttons and things
+# Release inputs
 gamepad.release_button(button=vg.DS4_BUTTONS.DS4_BUTTON_TRIANGLE)
 gamepad.right_trigger_float(value_float=0.0)
 gamepad.right_joystick_float(x_value_float=0.0, y_value_float=0.0)
 gamepad.accelerometer(x_value=0, y_value=0, z_value=0)
 gamepad.gyroscope(x_value=0, y_value=0, z_value=0)
 gamepad.touchpad(finger1=None, finger2=None)
-
 gamepad.update()
 
 time.sleep(1.0)
 
-# reset gamepad to default state
+# Reset back to default
 gamepad.reset()
-
 gamepad.update()
-
-time.sleep(1.0)
 ```
 
 ---
 
-### Rumble and LEDs:
+### Rumble and LEDs
 
-`vgamepad` enables registering custom callback functions to handle updates of the rumble motors, and of the LED ring.
+`vgamepad` allows registering callback functions to capture updates for rumble motors and LED indicators sent from the host/game.
 
-Custom callback functions require 6 parameters:
+The callback function requires exactly 6 parameters:
+
 ```python
 def my_callback(client, target, large_motor, small_motor, led, user_data):
     """
-    Callback function triggered at each received state change
+    Callback function triggered at each received state change.
 
-    :param client: vigem bus ID
-    :param target: vigem device ID
-    :param large_motor: integer in [0, 255] representing the state of the large motor
-    :param small_motor: integer in [0, 255] representing the state of the small motor
-    :param led: integer in [0, 255] (X360) or tuple (R,G,B) (DS4)
+    :param client: ViGEm bus ID (Windows) or None (Linux)
+    :param target: ViGEm device ID (Windows) or None (Linux)
+    :param large_motor: integer in [0, 255] representing large motor intensity
+    :param small_motor: integer in [0, 255] representing small motor intensity
+    :param led: integer in [0, 255] (X360) or a vg.DS4_LIGHTBAR_COLOR structure (DS4),
+                with .Red, .Green, and .Blue fields in [0, 255]
     :param user_data: placeholder, do not use
     """
-    # Do your things here. For instance:
     print(f"Received notification for client {client}, target {target}")
     print(f"large motor: {large_motor}, small motor: {small_motor}")
     print(f"led: {led}")
 ```
 
-The callback function needs to be registered as follows:
+Register the callback:
+
 ```python
 gamepad.register_notification(callback_function=my_callback)
 ```
 
-Each time the state of the gamepad is changed (for example by a video game that sends rumbling requests), the callback function will then be called.
+Each time the state of the gamepad is changed (for example, by a video game dispatching rumble commands), the callback function will be executed.
 
-In our example, when state changes are received, something like the following will be printed to `stdout`:
+**Notes:**
+- The callback must have exactly this 6-parameter signature; otherwise, `register_notification` raises a `TypeError`.
+- Only one callback can be registered per gamepad (a second call raises `RuntimeError`); invoke `unregister_notification()` first.
+- On Linux, `client` and `target` are always `None`, and the callback must not call methods of the gamepad.
+
+Example output on Windows written to `stdout`:
+
 ```terminal
 Received notification for client 2876897124288, target 2876931874736
 large motor: 255, small motor: 255
-led number: 0
+led: 0
 Received notification for client 2876897124288, target 2876931874736
 large motor: 0, small motor: 0
-led number: 0
+led: 0
 ```
 
-If not needed anymore, the callback function can be unregistered:
+To stop receiving notifications:
+
 ```python
 gamepad.unregister_notification()
 ```
 
 ---
 
-### Advanced users:
-More API functions are available for advanced users.
-See [api.py](https://github.com/yannbouteiller/vgamepad/blob/main/vgamepad/api.py). 
+## Advanced Users
 
-To skip installation of the `ViGEmBus` driver during `vgamepad` installation on Windows, set the `VGAMEPAD_SKIP_VIGEMBUS_INSTALL` environment variable to `true` before installing `vgamepad`.
+More API functions are available for advanced use cases. Refer to [api.py](https://github.com/yannbouteiller/vgamepad/blob/main/vgamepad/api.py).
 
-_Note: only `ViGEmBus 1.17.333.0` is tested on Windows._
+To skip the automated installation of the `ViGEmBus` driver during `vgamepad` installation on Windows, set the environment variable `VGAMEPAD_SKIP_VIGEMBUS_INSTALL=true` before running `pip install vgamepad`.
+
+> **Note:** Only `ViGEmBus 1.17.333.0` is officially tested and supported on Windows.
 
 ---
 
-## Testing:
-For X360 and DS4 basic function: https://hardwaretester.com/gamepad
+## Testing
 
-For DS4 advanced function: https://dualshock-tools.github.io (Windows only)
+- **Basic X360 & DS4 input testing:** [hardwaretester.com/gamepad](https://hardwaretester.com/gamepad)
+- **Advanced DS4 features (Windows only):** [dualshock-tools.github.io](https://dualshock-tools.github.io)
 
 ---
 
 ## Contribute
-All contributions to this project are welcome.
-Please submit a PR with your name and a short description of your contribution in the Contributors list.
+
+Contributions are welcome! Please submit a pull request including your name and a brief summary of your contribution in the Contributors list.
 
 ---
-## Authors
-### Maintainer:
-- Yann Bouteiller
-### Contributors:
 
-- JumpyzZ (rumble and LEDs)
-- willRicard (Linux support)
-- Palamabron (Linux support, advanced DS4 support)
+## Authors
+
+### Maintainer
+- **Yann Bouteiller**
+
+### Contributors
+- **JumpyzZ** (rumble and LEDs)
+- **willRicard** (Linux support)
+- **Palamabron** (Linux support, advanced DS4 support)
